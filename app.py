@@ -1,39 +1,31 @@
 # app.py
-# Streamlit-опросник: 17 предикторов  → «заглушка»-прогноз холецистита
-# запустить:  streamlit run app.py
+# Streamlit-опросник (17 признаков) ─ заглушка-прогноз холецистита
 import streamlit as st
-import numpy as np
 import random
 
-st.set_page_config(
-    page_title="Предсказание холецистита",
-    page_icon="🩺",
-    layout="centered",
-)
+st.set_page_config(page_title="Прогноз холецистита",
+                   page_icon="🩺",
+                   layout="centered")
 
-# ─────────────────────────────  стили  ──────────────────────────────
 st.markdown(
     """
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-      html, body, [class*="css"]  { font-family: 'Inter', sans-serif; }
-      .block-container              { padding-top: 2rem; }
-      .stButton>button               { width: 100%; border-radius: 8px;
-                                       background: linear-gradient(90deg,#6366f1,#7c3aed);
-                                       color:#fff; font-weight:600; height:3rem;}
-      .stButton>button:hover         { background:#6366f1; }
-      .title-h1                      { text-align:center; font-size:2rem;
-                                       font-weight:700; margin-bottom:1.5rem; }
-      .subtitle                      { font-size:1.25rem; font-weight:600;
-                                       margin-top:1.5rem; margin-bottom:0.5rem; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+    html, body, [class*="css"] {font-family:'Inter', sans-serif;}
+    .stButton>button {width:100%;height:3rem;border-radius:8px;
+                      background:linear-gradient(90deg,#6366f1,#7c3aed);
+                      color:#fff;font-weight:600;}
+    .stButton>button:hover {background:#6366f1;}
+    .title {text-align:center;font-size:2rem;font-weight:700;margin-bottom:1.5rem;}
+    .subtitle {font-size:1.1rem;font-weight:600;margin-top:1.4rem;}
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-st.markdown('<div class="title-h1">🩺 Опросник риска холецистита</div>', unsafe_allow_html=True)
+st.markdown('<div class="title">🩺 Опросник риска холецистита</div>', unsafe_allow_html=True)
 
-# ─────────────────────────────  предикторы  ─────────────────────────
+# ───────────── список признаков и категории ──────────────
 FEATURES = [
     'Степень фиброза по эластометрии',
     '1 блок - психическая и социальная адаптация не нарушается',
@@ -51,10 +43,9 @@ FEATURES = [
     'FLI - индекс стеатоза печени (рост, вес, окроужность талии, ГГТП, ТГ)',
     'ТГ',
     'Е-сигареты',
-    'HSI - индекс стеатоза печени ( пол, ИМТ, АЛТ, АСТ, СД)'
+    'HSI - индекс стеатоза печени ( пол, ИМТ, АЛТ, АСТ, СД)',
 ]
 
-# Категорические признаки (да/нет или фиксированные коды)
 CATEGORICAL = {
     '1 блок - психическая и социальная адаптация не нарушается': ["0 – нарушается", "1 – не нарушается"],
     'экстернальный тип пищевого поведения': ["0 – нет", "1 – есть"],
@@ -65,24 +56,28 @@ CATEGORICAL = {
     'ОДА23+ ': ["0 – нет", "1 – да"],
     '2 блок - интрапсихическая нарпавленностьреагирования на болезнь': ["0", "1"],
     'Е-сигареты': ["0 – нет", "1 – да"],
-    'Перерывы между приемами пищи 2-4 часа -1, 6 и более часов-2, в разные дни значительно отличаются -3': ["-1", "-2", "-3"]
+    'Перерывы между приемами пищи 2-4 часа -1, 6 и более часов-2, в разные дни значительно отличаются -3': ["-1", "-2", "-3"],
 }
 
-# ─────────────────────────────  форма  ──────────────────────────────
-with st.form("predict_form"):
+# ───────────── форма ввода ──────────────
+user_input = {}
+with st.form("input_form", clear_on_submit=False):
     for feat in FEATURES:
         st.markdown(f'<div class="subtitle">{feat}</div>', unsafe_allow_html=True)
         if feat in CATEGORICAL:
-            val = st.selectbox("", CATEGORICAL[feat], key=feat)
+            user_input[feat] = st.selectbox(
+                " ", CATEGORICAL[feat], key=f"inp_{feat}"
+            )
         else:
-            val = st.number_input("", value=0.0, format="%.2f", key=feat)
-        st.session_state[feat] = val
+            user_input[feat] = st.number_input(
+                " ", value=0.0, format="%.2f", key=f"inp_{feat}"
+            )
     submitted = st.form_submit_button("Рассчитать")
 
-# ────────────────────────────  «заглушка» прогноз  ──────────────────
+# ───────────── заглушка-прогноз ──────────────
 if submitted:
+    prob = round(random.uniform(0.05, 0.95), 3)
+    cls  = "✅ холецистит ОЖИДАЕТСЯ" if prob >= 0.5 else "🟢 холецистит не прогнозируется"
     st.markdown("---")
-    prob = round(random.uniform(0.05, 0.95), 3)   # псевдо-вероятность
-    cls  = "✅ Холецестит ОЖИДАЕТСЯ" if prob >= 0.5 else "🟢 Холецестит НЕ прогнозируется"
     st.markdown(f"### Вероятность холецистита: **{prob}**")
     st.success(cls)
