@@ -209,8 +209,7 @@ if submitted:
     else:
         st.info("Компонент `streamlit-shap` не установлен — график не отображён.")
   # ───────────── 1. Карточка с формой ─────────────
-      st.markdown("</div>", unsafe_allow_html=True)
-
+    
 
     # ───── SHAP ─────
     # ───── SHAP ─────
