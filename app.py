@@ -1,7 +1,7 @@
 # ────────────────────────────────────────────
 # app.py – интерактивный опросник риска холецистита
 # ────────────────────────────────────────────
-import json, pickle, pathlib, base64
+import json, pickle, pathlib
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -17,33 +17,20 @@ st.set_page_config("Прогноз холецистита", "🩺", layout="cent
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+    .stApp {
+        background-color: white;
+    }
     html,body,[class*="css"]{font-family:'Inter',sans-serif;}
-    body{background:linear-gradient(135deg,#6366f1 0%,#7c3aed 50%,#ec4899 100%);min-height:100vh;}
 
-    .hero{
+    .card{
         max-width:720px;
-        height:160px;
-        margin:2.5rem auto 1rem auto;
+        margin:2.5rem auto;
+        padding:2.2rem 3rem;
         background:rgba(255,255,255,0.85);
         backdrop-filter:blur(14px);
         border-radius:1.25rem;
         box-shadow:0 10px 25px rgba(0,0,0,.15);
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        overflow:hidden;
     }
-    .hero img {
-        width:100%;
-        height:100%;
-        object-fit:contain;
-        border-radius:1.25rem;
-    }
-
-    .card{max-width:720px;margin:1rem auto 2.5rem auto;padding:2.2rem 3rem;
-          background:rgba(255,255,255,0.85);backdrop-filter:blur(14px);
-          border-radius:1.25rem;box-shadow:0 10px 25px rgba(0,0,0,.15);}
     .title{font-size:2rem;font-weight:700;text-align:center;margin-bottom:1.4rem;}
     .subtitle{font-size:1.05rem;font-weight:600;margin:1.2rem 0 .35rem;}
     .stButton>button{width:100%;height:3rem;border-radius:.65rem;border:none;
@@ -56,10 +43,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ───── блок hero с логотипом ─────
+# ───── логотип без лишнего контейнера ─────
 if LOGO.exists():
-    b64 = base64.b64encode(LOGO.read_bytes()).decode()
-    st.markdown(f'<div class="hero"><img src="data:image/png;base64,{b64}"/></div>', unsafe_allow_html=True)
+    st.image(str(LOGO), use_column_width=True)
 
 # ╭──────────── загрузка артефактов ───────────╮
 @st.cache_resource(show_spinner=False)
