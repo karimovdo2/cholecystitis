@@ -1,17 +1,18 @@
 # ────────────────────────────────────────────
 # app.py – интерактивный опросник риска холецистита
-# автор: <вы>
 # ────────────────────────────────────────────
-import streamlit as st
-import pandas as pd
+import pathlib, json, pickle
+
 import numpy as np
-import pickle, json, pathlib
-from catboost import CatBoostClassifier
+import pandas as pd
 import shap
+import streamlit as st
+import streamlit_shap as st_shap                # ⬅️ компонент-обёртка для SHAP
+from catboost import CatBoostClassifier
 
 THIS_DIR = pathlib.Path(__file__).parent.resolve()
 
-# ╭─────────────────────── UI / CSS ───────────────────────╮
+# ╭────────────── UI / CSS ──────────────╮
 st.set_page_config(page_title="Прогноз холецистита",
                    page_icon="🩺",
                    layout="centered")
@@ -32,40 +33,28 @@ st.markdown(
                       background:linear-gradient(90deg,#6366f1 0%,#7c3aed 100%);
                       transition:background 0.2s;}
     .stButton>button:hover {background:#6366f1;}
-    </style>""",
+    </style>
+    """,
     unsafe_allow_html=True
 )
 
-# ╭────────────────── загрузка артефактов ──────────────────╮
+# ╭──────────── загрузка артефактов ───────────╮
 @st.cache_resource(show_spinner=False)
 def load_artifacts():
-    # 1. модель
     model = CatBoostClassifier()
     model.load_model(THIS_DIR / "catboost_gb17.cbm")
-    # 2. категориальные признаки (список str)
-    cat_feats = [
-        '1 блок - психическая и социальная адаптация не нарушается',
-        'экстернальный тип пищевого поведения',
-        'Частота приема пищи 1-2 раза -1, 3 раза -2, 4 и более раз -3',
-        'Разнообразное питание да-1, нет-0',
-        'Наследственность отягощена у близких родственников по ХНХ-1, ЖКБ-2, цирроз печени-3, хр.гепатит-4',
-        'ОДА23+ ',
-        '2 блок - интрапсихическая нарпавленностьреагирования на болезнь',
-        'Е-сигареты',
-        'Перерывы между приемами пищи 2-4 часа -1, 6 и более часов-2, в разные дни значительно отличаются -3'
-    ]
-    # 3. сопоставление «текст в selectbox → исходный код»
+
     enc_map = json.loads((THIS_DIR / "enc_map.json").read_text(encoding="utf-8"))
-    # 4. медианы для числовых полей
     with open(THIS_DIR / "medians.pkl", "rb") as fh:
         medians = pickle.load(fh)
-    # 5. shap‑explainer (лёгкий, поэтому кэшируем)
+
     explainer = shap.TreeExplainer(model)
-    return model, cat_feats, enc_map, medians, explainer
+    return model, enc_map, medians, explainer
 
-clf, CAT_FEATURES, ENC_MAP, MEDIANS, EXPL = load_artifacts()
 
-# ╭─────────────────── список признаков ────────────────────╮
+clf, ENC_MAP, MEDIANS, EXPL = load_artifacts()
+
+# ╭─────────── признаки ───────────╮
 FEATURES = [
     'Степень фиброза по эластометрии',
     '1 блок - психическая и социальная адаптация не нарушается',
@@ -86,61 +75,71 @@ FEATURES = [
     'Е-сигареты'
 ]
 
-# выпадающие списки
 CATEGORICAL = {k: list(v.keys()) for k, v in ENC_MAP.items()}
 
-# ╭─────────────────────── UI ───────────────────────────────╮
+# разумные диапазоны для слайдеров
+NUM_RANGES = {
+    'ИМТ': (15.0, 45.0),
+    'Общий холестерин': (2.5, 9.0),
+    'TyG - триглицериды- глюкоза': (3.5, 6.0),
+    'St-index - индекс стеатоза ( возраст, рост, окружность талии, СД)': (-2.0, 1.0),
+    'HSI - индекс стеатоза печени ( пол, ИМТ, АЛТ, АСТ, СД)': (20.0, 50.0),
+    'Тревога': (0, 14),
+    'ОДА23+ ': (0, 100),
+    'Степень фиброза по эластометрии': (0.0, 300.0),
+    'Степень стеатоза по эластометрии': (0.0, 300.0),
+    'FIB-4 - индекс фиброза печени ( возраст, АЛТ, АСТ, тромбоциты)': (0.0, 5.0),
+}
+
+# ╭─────────────── UI ───────────────╮
 with st.container():
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="title">🩺 Опросник риска холецистита</div>',
                 unsafe_allow_html=True)
 
-    user_values = {}
-    dirty_flag = {}           # отмечаем, вводил ли пользователь значение
+    user_values, dirty = {}, {}
 
     with st.form("input_form"):
         for feat in FEATURES:
-            st.markdown(f'<div class="subtitle">{feat}</div>',
-                        unsafe_allow_html=True)
+            st.markdown(f'<div class="subtitle">{feat}</div>', unsafe_allow_html=True)
+
             if feat in CATEGORICAL:
-                choice = st.selectbox(" ", CATEGORICAL[feat], key=feat)
-                user_values[feat] = choice
-                dirty_flag[feat] = True            # всегда определено
+                sel = st.selectbox(" ", CATEGORICAL[feat], key=feat)
+                user_values[feat], dirty[feat] = sel, True
             else:
-                val = st.number_input(" ", value=0.0, format="%.2f", key=feat)
-                user_values[feat] = val
-                dirty_flag[feat] = st.session_state[feat] != 0.0
+                lo, hi = NUM_RANGES.get(feat, (0.0, 100.0))
+                default = MEDIANS.get(feat, (lo + hi) / 2)
+                val = st.slider(" ", min_value=lo, max_value=hi,
+                                value=float(default), step=0.1, key=feat)
+                user_values[feat], dirty[feat] = val, True
         submitted = st.form_submit_button("Рассчитать")
 
-    # ╭───────────── инференс ─────────────╮
     if submitted:
-        # сбор в правильном порядке
         ordered = []
         for feat in FEATURES:
             val = user_values[feat]
             if feat in ENC_MAP:
-                val = ENC_MAP[feat][val]           # строка → код
-            else:
-                if not dirty_flag[feat]:
-                    val = MEDIANS.get(feat, 0.0)   # подставляем медиану
+                val = ENC_MAP[feat][val]
             ordered.append(val)
 
         df = pd.DataFrame([ordered], columns=FEATURES)
         prob = float(clf.predict_proba(df)[:, 1])
         label = prob >= 0.5
 
-        st.markdown(f"### Вероятность холецистита: **{prob:0.3f}**")
-        if label:
-            st.error("💡 Модель указывает на высокий риск хронического холецистита.")
-        else:
-            st.success("✅ Признаков, характерных для хронического холецистита, не обнаружено.")
+        st.markdown(f"### Вероятность холецистита: **{prob:.3f}**")
+        (st.error if label else st.success)(
+            "💡 Высокий риск хронического холецистита." if label
+            else "✅ Признаков, характерных для хронического холецистита, не обнаружено."
+        )
 
-        # ───── краткая интерпретация SHAP ─────
+        # SHAP интерпретация
         shap_vals = EXPL(df)
-        st.markdown("#### Три наиболее влияющих признака")
-        top = np.argsort(np.abs(shap_vals.values[0]))[::-1][:3]
-        for idx in top:
-            feat = FEATURES[idx]
-            st.write(f"- **{feat}** — вклад {shap_vals.values[0, idx]:+0.3f}")
+        st.markdown("#### Три наиболее влияющих признака")
+        top_idx = np.argsort(np.abs(shap_vals.values[0]))[::-1][:3]
+        for idx in top_idx:
+            st.write(f"- **{FEATURES[idx]}** — вклад {shap_vals.values[0, idx]:+0.3f}")
+
+        with st.expander("📊 SHAP-summary-plot"):
+            st_shap.st_shap(shap_vals, height=340)   # интерактивный график
 
     st.markdown('</div>', unsafe_allow_html=True)
