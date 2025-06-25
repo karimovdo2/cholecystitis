@@ -2,7 +2,7 @@
 # app.py – интерактивный опросник риска холецистита
 # ────────────────────────────────────────────
 import json, pickle, pathlib, warnings
-
+import base64, json, pickle, pathlib
 import numpy as np
 import pandas as pd
 import shap
