@@ -48,22 +48,20 @@ h1.title{font-size:2rem;font-weight:700;text-align:center;margin-bottom:1.4rem;}
     unsafe_allow_html=True,
 )
 
-# ░░░░  загрузка модели и прочих артефактов  ░░░░
+# ╭──────────── загрузка артефактов ─────────────╮
 @st.cache_resource(show_spinner=False)
 def load_artifacts():
     model = CatBoostClassifier()
     model.load_model(THIS_DIR / "catboost_gb17.cbm")
 
-    enc_map = json.loads((THIS_DIR / "enc_map.json").read_text("utf-8"))
+    enc_map = json.loads((THIS_DIR / "enc_map.json").read_text(encoding="utf-8"))
     medians = pickle.loads((THIS_DIR / "medians.pkl").read_bytes())
-
     explainer = shap.TreeExplainer(model)
     return model, enc_map, medians, explainer
 
-
 clf, ENC_MAP, MEDIANS, EXPL = load_artifacts()
 
-# ░░░░  список признаков  ░░░░
+# ╭──────────── признаки ─────────────╮
 FEATURES = [
     "Степень фиброза по эластометрии",
     "1 блок - психическая и социальная адаптация не нарушается",
@@ -85,76 +83,66 @@ FEATURES = [
 ]
 CATEGORICAL = {k: list(v.keys()) for k, v in ENC_MAP.items()}
 
-# ░░░░  ФОРМА  ░░░░
-st.markdown('<h1 class="title">🩺 Опросник риска холецистита</h1>',
-            unsafe_allow_html=True)
 
-user_vals, typed_flag = {}, {}
-with st.form("input_form"):
-
-    for feat in FEATURES:
-        # подзаголовок
-        st.markdown(f'<div class="subtitle">{feat}</div>', unsafe_allow_html=True)
-
-        if feat in CATEGORICAL:  # ----- категориальные
+form_vals, typed = {}, {}
+with st.form("hc_form"):
+    for f in FEATURES:
+        st.markdown(f'<div class="subtitle">{f}</div>', unsafe_allow_html=True)
+        if f in CATEGORICAL:  # селектбоксы
             choice = st.selectbox(
-                "выбор",                     # label обязателен, но скрываем
-                options=CATEGORICAL[feat],
-                key=feat,
+                "выберите значение",
+                CATEGORICAL[f],
+                key=f,
                 label_visibility="collapsed",
             )
-            user_vals[feat] = choice
-            typed_flag[feat] = True
-
-        else:                     # ----- числовые
-            med = float(MEDIANS.get(feat, 0.0))
-            # формируем ±3σ диапазон «на глаз» (можно заменить на свои границы)
-            span = 3 * (abs(med) if med else 1) + 10
-            vmin, vmax = med - span, med + span
+            form_vals[f] = choice
+            typed[f] = True
+        else:  # числовые → слайдер
+            med = float(MEDIANS.get(f, 0.0))
+            span = max(abs(med), 1.0) * 3  # диапазон ±3*|median|
             val = st.slider(
-                "число",
-                min_value=float(vmin),
-                max_value=float(vmax),
+                "скорректируйте значение",
+                min_value=med - span,
+                max_value=med + span,
                 value=med,
                 step=0.1,
-                key=feat,
+                key=f,
                 label_visibility="collapsed",
             )
-            user_vals[feat] = val
-            typed_flag[feat] = val != med
-
+            form_vals[f] = val
+            typed[f] = not np.isclose(val, med)
     submitted = st.form_submit_button("Рассчитать")
 
-# ░░░░  ИНФЕРЕНС  ░░░░
 if submitted:
+    # формируем строку для модели
     row = []
-    for feat in FEATURES:
-        v = user_vals[feat]
-        if feat in ENC_MAP:         # строка → числовой код
-            v = ENC_MAP[feat][v]
-        elif not typed_flag[feat]:  # пользователь не трогал → медиана
-            v = MEDIANS.get(feat, 0.0)
+    for f in FEATURES:
+        v = form_vals[f]
+        if f in ENC_MAP:  # категориальный
+            v = ENC_MAP[f][v]
+        elif not typed[f]:  # медиана, если не трогали
+            v = MEDIANS[f]
         row.append(v)
 
     df = pd.DataFrame([row], columns=FEATURES)
     prob = float(clf.predict_proba(df)[:, 1])
-
     st.markdown(f"### Вероятность холецистита: **{prob:.3f}**")
     if prob >= 0.5:
         st.error("💡 Модель указывает на высокий риск хронического холецистита.")
     else:
         st.success("✅ Признаков, характерных для хронического холецистита, не обнаружено.")
 
-    # ░░░░  SHAP-бар  ░░░░
-    with st.spinner("Считаем вклад признаков…"):
-        shap_values = EXPL(df)
-        top_idx = np.argsort(np.abs(shap_values.values[0]))[::-1][:3]
+    # ───── SHAP ─────
+    shap_values = EXPL(df)
+    st.markdown("#### Три наиболее влияющих признака")
+    top = np.argsort(np.abs(shap_values.values[0]))[::-1][:3]
+    for idx in top:
+        st.write(f"- **{FEATURES[idx]}** — вклад {shap_values.values[0, idx]:+0.3f}")
 
-        st.markdown("#### Три наиболее влияющих признака")
-        for i in top_idx:
-            st.write(f"- **{FEATURES[i]}** — вклад {shap_values.values[0, i]:+0.3f}")
+    # Полный бар-плот
+    st.markdown("#### Вклад всех признаков")
+    fig, ax = plt.subplots(figsize=(6, 4))
+    shap.plots.bar(shap_values, max_display=len(FEATURES), show=False, ax=ax)
+    st.pyplot(fig)
 
-        # рисуем bar-plot
-        plt.close("all")                              # гасим возможные старые фигуры
-        fig = shap.plots.bar(shap_values, show=False) # fig – matplotlib.figure.Figure
-        st.pyplot(fig)
+st.markdown('</div>', unsafe_allow_html=True)
