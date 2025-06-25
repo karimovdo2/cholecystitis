@@ -1,46 +1,37 @@
-# ────────────────────────────────────────────
-# app.py – опросник риска хронического холецистита (фиксированный)
-# ────────────────────────────────────────────
-import base64
-import json
-import pickle
-import pathlib
-
+# ────────────────────────────────
+# app.py – интерактивный опросник
+# ────────────────────────────────
+import base64, json, pickle, pathlib
 import numpy as np
 import pandas as pd
-import shap
 import streamlit as st
-import matplotlib.pyplot as plt
+import shap, matplotlib.pyplot as plt
 from catboost import CatBoostClassifier
 
 THIS_DIR = pathlib.Path(__file__).parent.resolve()
-LOGO = THIS_DIR / "hc_logo.png"  # положите картинку в ту же папку
+LOGO     = THIS_DIR / "hc_logo.png"
 
-# ╭────────────── UI / CSS ──────────────╮
-st.set_page_config(page_title="Прогноз холецистита", page_icon="🩺", layout="centered")
+# ───────────── 1. Конфигурация страницы ─────────────
+st.set_page_config(               # квадрата №1 больше нет
+    page_title="Прогноз холецистита",
+    page_icon=None,               # ← эмодзи убрали
+    layout="centered"
+)
 
+# ───────────── 2. CSS (оставляем цвета как были) ─────────────
 st.markdown(
     """
     <style>
-    /*  ======== базовый фон и шрифты ======== */
-    .stApp {background-color: white;}
+    .stApp { background-color: white; }
     html,body,[class*="css"]{font-family:'Inter',sans-serif;}
 
-    /*  ======== карта-контейнер ======== */
     .card{
-        max-width:720px;
-        margin:2.5rem auto;
-        padding:2.2rem 3rem;
-        background:rgba(255,255,255,0.85);
-        backdrop-filter:blur(14px);
-        border-radius:1.25rem;
-        box-shadow:0 10px 25px rgba(0,0,0,.15);
+        max-width:720px;margin:2.5rem auto;padding:2.2rem 3rem;
+        background:rgba(255,255,255,0.85);backdrop-filter:blur(14px);
+        border-radius:1.25rem;box-shadow:0 10px 25px rgba(0,0,0,.15);
     }
-
     .title{font-size:2rem;font-weight:700;text-align:center;margin-bottom:1.4rem;}
     .subtitle{font-size:1.05rem;font-weight:600;margin:1.2rem 0 .35rem;}
-
-    /*  ======== кнопка ======== */
     .stButton>button{
         width:100%;height:3rem;border-radius:.65rem;border:none;
         font-weight:600;color:#fff;
@@ -53,17 +44,22 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ╭──────────── логотип (без лишних пустых блоков) ─────────────╮
+# ───────────── 3. Логотип первым элементом ─────────────
 if LOGO.exists():
-    encoded_logo = base64.b64encode(LOGO.read_bytes()).decode()
+    img64 = base64.b64encode(LOGO.read_bytes()).decode()
     st.markdown(
-        f"""
-        <div style='text-align: center; margin: 1.5rem 0;'>
-            <img src='data:image/png;base64,{encoded_logo}' width='200'>
-        </div>
-        """,
+        f"<div style='text-align:center;margin-top:1rem;margin-bottom:1rem;'>"
+        f"<img src='data:image/png;base64,{img64}' width='200'>"
+        f"</div>",
         unsafe_allow_html=True,
     )
+
+# ───────────── 4. Карточка с заголовком (без эмодзи) ─────────────
+st.markdown('<div class="card">', unsafe_allow_html=True)
+st.markdown('<div class="title">Опросник риска холецистита</div>',  # квадрата №2 больше нет
+            unsafe_allow_html=True)
+
+# …………… ниже идёт ваш прежний код (загрузка модели, форма и т.д.) ……………
 
 # ╭──────────── загрузка артефактов ─────────────╮
 @st.cache_resource(show_spinner=False)
