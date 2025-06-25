@@ -85,17 +85,15 @@ FEATURES = [
 ]
 CATEGORICAL = {k: list(v.keys()) for k, v in ENC_MAP.items()}
 # ───────────── 3. Логотип первым элементом ─────────────
+# ───────────── 3. Логотип первым элементом ─────────────
 if LOGO.exists():
     img64 = base64.b64encode(LOGO.read_bytes()).decode()
     st.markdown(
         f"<div style='text-align:center;margin-top:1rem;margin-bottom:1rem;'>"
-        f"<img src='data:image/png;base64,{img64}' width='200'>"
+        f"<img src='data:image/png;base64,{img64}' width='500'>"
         f"</div>",
         unsafe_allow_html=True,
     )
-# ░░░░  ФОРМА  ░░░░
-st.markdown('<h1 class="title">🩺 Опросник риска холецистита</h1>',
-            unsafe_allow_html=True)
 
 
 
