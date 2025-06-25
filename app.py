@@ -192,7 +192,15 @@ if submitted:
     else:
         st.success("✅ Признаков, характерных для хронического холецистита, не обнаружено.")
 
+    # ───── SHAP ─────
+    # ───── SHAP ─────
+    shap_values = EXPL(df)
 
+    # Три главных признака
+    st.markdown("#### Три наиболее влияющих признака")
+    top = np.argsort(np.abs(shap_values.values[0]))[::-1][:3]
+    for idx in top:
+        st.write(f"- **{FEATURES[idx]}** — вклад {shap_values.values[0, idx]:+0.3f}")
 
     shap_row = EXPL(df)
     # ───── полный интерактивный график SHAP ─────
@@ -211,15 +219,6 @@ if submitted:
   # ───────────── 1. Карточка с формой ─────────────
     
 
-    # ───── SHAP ─────
-    # ───── SHAP ─────
-    shap_values = EXPL(df)
-
-    # Три главных признака
-    st.markdown("#### Три наиболее влияющих признака")
-    top = np.argsort(np.abs(shap_values.values[0]))[::-1][:3]
-    for idx in top:
-        st.write(f"- **{FEATURES[idx]}** — вклад {shap_values.values[0, idx]:+0.3f}")
 
     # Полный бар‑плот с учётом знака
     st.markdown("#### Вклад всех признаков")
