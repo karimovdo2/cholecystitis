@@ -9,8 +9,8 @@ import shap
 from catboost import CatBoostClassifier
 
 # ────────── SHAP-компонент (опц.) ──────────
-try:
-    import streamlit_shap as st_shap          # pip install streamlit-shap
+try:                                # pip install streamlit-shap
+    import streamlit_shap as st_shap
     SHAP_AVAILABLE = True
 except ModuleNotFoundError:
     SHAP_AVAILABLE = False
@@ -50,15 +50,16 @@ def load_artifacts():
     model = CatBoostClassifier()
     model.load_model(THIS_DIR / "catboost_gb17.cbm")
 
-    enc_map  = json.loads((THIS_DIR / "enc_map.json").read_text("utf-8"))
-    medians  = pickle.load(open(THIS_DIR / "medians.pkl", "rb"))
-    expl     = shap.TreeExplainer(model)
-    return model, enc_map, medians, expl
+    enc_map  = json.loads((THIS_DIR / "enc_map.json").read_text(encoding="utf-8"))
+    medians  = pickle.loads((THIS_DIR / "medians.pkl").read_bytes())
+
+    explainer = shap.TreeExplainer(model)
+    return model, enc_map, medians, explainer
 
 
 clf, ENC_MAP, MEDIANS, EXPL = load_artifacts()
 
-# ╭────────── список признаков ──────────╮
+# ╭─────────── признаки ───────────╮
 FEATURES = [
     "Степень фиброза по эластометрии",
     "1 блок - психическая и социальная адаптация не нарушается",
@@ -78,63 +79,57 @@ FEATURES = [
     "Тревога",
     "Е-сигареты",
 ]
-
 CATEGORICAL = {k: list(v.keys()) for k, v in ENC_MAP.items()}
 
-# ╭────────────────────── UI ──────────────────────╮
+# ╭─────────────────────── UI ───────────────────────╮
 with st.container():
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="title">🩺 Опросник риска холецистита</div>',
                 unsafe_allow_html=True)
 
-    user_vals, typed_flag = {}, {}
-
-    # ───────── форма ввода ─────────
+    user_vals, is_typed = {}, {}
     with st.form("input_form"):
         for feat in FEATURES:
             st.markdown(f'<div class="subtitle">{feat}</div>', unsafe_allow_html=True)
-
-            if feat in CATEGORICAL:                                # selectbox
+            if feat in CATEGORICAL:                            # категориальный
                 choice = st.selectbox(
-                    label="выберите значение",
-                    options=CATEGORICAL[feat],
-                    key=feat,
+                    label   = feat,
+                    options = CATEGORICAL[feat],
+                    key     = feat,
                     label_visibility="collapsed",
                 )
                 user_vals[feat] = choice
-                typed_flag[feat] = True
-
-            else:                                                   # slider
-                med = float(MEDIANS.get(feat, 0.0))
-                span = max(1.0, 3 * abs(med) + 10)
-                low, high = med - span, med + span
+                is_typed[feat] = True
+            else:                                              # числовой → slider
+                median = float(MEDIANS.get(feat, 0.0))
+                # ±3 σ от медианы — грубый диапазон, плюс небольшой «запас»
+                span   = max(abs(median), 1.0) * 3 + 10
                 val = st.slider(
-                    label="укажите число",
-                    min_value=low,
-                    max_value=high,
-                    value=med,
-                    step=0.1,
-                    key=feat,
-                    label_visibility="collapsed",
+                    label             = feat,
+                    min_value         = median - span,
+                    max_value         = median + span,
+                    value             = median,
+                    step              = 0.1,
+                    key               = feat,
+                    label_visibility  = "collapsed",
                 )
                 user_vals[feat] = val
-                typed_flag[feat] = not np.isclose(val, med)
-
+                is_typed[feat] = not np.isclose(val, median)
         submitted = st.form_submit_button("Рассчитать")
 
-    # ╭─────────── инференс ────────────╮
     if submitted:
-        row = []
+        # ───────── инференс ─────────
+        ordered = []
         for feat in FEATURES:
             v = user_vals[feat]
-            if feat in ENC_MAP:           # code for category
+            if feat in ENC_MAP:           # строка → числовой код
                 v = ENC_MAP[feat][v]
-            elif not typed_flag[feat]:    # default (медиана)
+            elif not is_typed[feat]:      # пользователь не менял поле
                 v = MEDIANS[feat]
-            row.append(v)
+            ordered.append(v)
 
-        df = pd.DataFrame([row], columns=FEATURES)
-        prob = clf.predict_proba(df)[0, 1]
+        df = pd.DataFrame([ordered], columns=FEATURES)
+        prob = float(clf.predict_proba(df)[0, 1])
 
         st.markdown(f"### Вероятность холецистита: **{prob:.3f}**")
         if prob >= 0.5:
@@ -142,19 +137,25 @@ with st.container():
         else:
             st.success("✅ Признаков, характерных для хронического холецистита, не обнаружено.")
 
-        # ───────── краткий SHAP ─────────
-        shap_vals = EXPL(df)
-        top_idx = np.abs(shap_vals.values[0]).argsort()[::-1][:3]
-        st.markdown("#### Три наиболее значимых признака")
-        for i in top_idx:
-            st.write(f"- **{FEATURES[i]}** — вклад {shap_vals.values[0, i]:+0.3f}")
+        # ───── краткий текстовый разбор ─────
+        shap_row = EXPL(df)                     # Explanation (1 × n фичей)
+        st.markdown("#### Три наиболее влияющих признака")
+        top_idx = np.argsort(np.abs(shap_row.values[0]))[::-1][:3]
+        for idx in top_idx:
+            st.write(f"- **{FEATURES[idx]}** — вклад {shap_row.values[0, idx]:+0.3f}")
 
-        # полный бар-плот, если библиотека доступна
+        # ───── полный интерактивный график SHAP ─────
         if SHAP_AVAILABLE:
-            st.markdown("#### Полная диаграмма влияния признаков")
-            with st.container():
-                st_shap.st_shap(shap.plots.bar(shap_vals, show=False), height=320)
+            st.markdown("#### SHAP-график для данного пациента")
+            # force_plot → объект с .html() — идеально для streamlit-shap
+            shap_plot = shap.force_plot(
+                EXPL.expected_value,
+                shap_row.values[0],
+                df.iloc[0],
+                matplotlib=False,
+            )
+            st_shap.st_shap(shap_plot, height=240)
         else:
-            st.info("Библиотека `streamlit-shap` не установлена — интерактивный график не показан.")
+            st.info("Компонент `streamlit-shap` не установлен — график не отображён.")
 
     st.markdown("</div>", unsafe_allow_html=True)
