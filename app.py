@@ -20,6 +20,21 @@ st.markdown(
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
     html,body,[class*="css"]{font-family:'Inter',sans-serif;}
     body{background:linear-gradient(135deg,#6366f1 0%,#7c3aed 50%,#ec4899 100%);min-height:100vh;}
+
+    /* ───── новый блок hero с логотипом ───── */
+    .hero{
+        width:100%;
+        height:160px;
+        margin:2.5rem auto;
+        background:rgba(255,255,255,0.85);
+        backdrop-filter:blur(14px);
+        border-radius:1.25rem;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        box-shadow:0 10px 25px rgba(0,0,0,.15);
+    }
+
     .card{max-width:720px;margin:2.5rem auto;padding:2.2rem 3rem;
           background:rgba(255,255,255,0.85);backdrop-filter:blur(14px);
           border-radius:1.25rem;box-shadow:0 10px 25px rgba(0,0,0,.15);}
@@ -35,8 +50,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# ───── блок hero с логотипом ─────
 if LOGO.exists():
-    st.image(str(LOGO), width=160)
+    st.markdown('<div class="hero">', unsafe_allow_html=True)
+    st.image(str(LOGO), width=140)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ╭──────────── загрузка артефактов ───────────╮
 @st.cache_resource(show_spinner=False)
