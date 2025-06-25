@@ -35,6 +35,11 @@ st.markdown(
         box-shadow:0 10px 25px rgba(0,0,0,.15);
     }
 
+    .hero img {
+        max-height:100px;
+        object-fit:contain;
+    }
+
     .card{max-width:720px;margin:2.5rem auto;padding:2.2rem 3rem;
           background:rgba(255,255,255,0.85);backdrop-filter:blur(14px);
           border-radius:1.25rem;box-shadow:0 10px 25px rgba(0,0,0,.15);}
@@ -52,9 +57,7 @@ st.markdown(
 
 # ───── блок hero с логотипом ─────
 if LOGO.exists():
-    st.markdown('<div class="hero">', unsafe_allow_html=True)
-    st.image(str(LOGO), width=140)
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="hero"><img src="data:image/png;base64,{LOGO.read_bytes().hex()}"/></div>', unsafe_allow_html=True)
 
 # ╭──────────── загрузка артефактов ───────────╮
 @st.cache_resource(show_spinner=False)
