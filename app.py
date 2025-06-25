@@ -38,14 +38,29 @@ st.markdown(
                      background:linear-gradient(90deg,#6366f1 0%,#7c3aed 100%);
                      transition:background .2s;}
     .stButton>button:hover{background:#6366f1;}
+    .logo-container {
+        text-align: center;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+    .logo-container img {
+        width: 200px;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# ───── логотип без лишнего контейнера ─────
+# ───── логотип в отдельном div с красивым масштабированием ─────
 if LOGO.exists():
-    st.image(str(LOGO), use_column_width=True)
+    st.markdown(
+        f"""
+        <div class='logo-container'>
+            <img src='data:image/png;base64,{LOGO.read_bytes().encode('base64').decode()}' alt='logo'>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 # ╭──────────── загрузка артефактов ───────────╮
 @st.cache_resource(show_spinner=False)
