@@ -249,7 +249,7 @@ if submitted:
     order  = np.argsort(np.abs(vals))[::-1]
     colors = ['#e74c3c' if v > 0 else '#1f77b4' for v in vals[order]]  # красный ↑ риск, синий ↓ риск
 
-    fig, ax = plt.subplots(figsize=(7, 5))
+    fig, ax = plt.subplots(figsize=(12, 6))
     ax.barh(np.array(FEATURES)[order], vals[order], color=colors)
     ax.axvline(0, color="#555", linewidth=1)
     ax.invert_yaxis()
