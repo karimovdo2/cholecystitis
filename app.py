@@ -96,9 +96,6 @@ FEATURES = [
 ]
 CATEGORICAL = {k: list(v.keys()) for k, v in ENC_MAP.items()}
 
-# ╭──────────── форма в «карте» ─────────────╮
-st.markdown('<div class="card">', unsafe_allow_html=True)
-st.markdown('<div class="title">🩺 Опросник риска холецистита</div>', unsafe_allow_html=True)
 
 form_vals, typed = {}, {}
 with st.form("hc_form"):
