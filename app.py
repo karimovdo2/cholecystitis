@@ -194,7 +194,7 @@ if submitted:
 
 
 
-
+    shap_row = EXPL(df)
     # ───── полный интерактивный график SHAP ─────
     if SHAP_AVAILABLE:
         st.markdown("#### SHAP-график для данного пациента")
