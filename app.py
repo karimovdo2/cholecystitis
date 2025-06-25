@@ -95,7 +95,9 @@ if LOGO.exists():
         unsafe_allow_html=True,
     )
 
-
+# ░░░░  ФОРМА  ░░░░
+st.markdown('<h1 class="title">🩺 Опросник риска холецистита</h1>',
+            unsafe_allow_html=True)
 
 
 # ╭──────────── загрузка артефактов ─────────────╮
