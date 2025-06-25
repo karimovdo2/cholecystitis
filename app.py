@@ -13,6 +13,14 @@ import matplotlib.pyplot as plt
 # ░░░░  базовые пути  ░░░░
 THIS_DIR = pathlib.Path(__file__).parent.resolve()
 LOGO     = THIS_DIR / "hc_logo.png"
+
+# ────────── SHAP-компонент (опц.) ──────────
+try:                                # pip install streamlit-shap
+    import streamlit_shap as st_shap
+    SHAP_AVAILABLE = True
+except ModuleNotFoundError:
+    SHAP_AVAILABLE = False
+
 # ░░░░  Streamlit: конфиг и CSS  ░░░░
 st.set_page_config("Прогноз холецистита", "🩺", layout="centered")
 
@@ -184,6 +192,26 @@ if submitted:
     else:
         st.success("✅ Признаков, характерных для хронического холецистита, не обнаружено.")
 
+
+
+
+    # ───── полный интерактивный график SHAP ─────
+    if SHAP_AVAILABLE:
+        st.markdown("#### SHAP-график для данного пациента")
+        # force_plot → объект с .html() — идеально для streamlit-shap
+        shap_plot = shap.force_plot(
+            EXPL.expected_value,
+            shap_row.values[0],
+            df.iloc[0],
+            matplotlib=False,
+        )
+        st_shap.st_shap(shap_plot, height=240)
+    else:
+        st.info("Компонент `streamlit-shap` не установлен — график не отображён.")
+  # ───────────── 1. Карточка с формой ─────────────
+      st.markdown("</div>", unsafe_allow_html=True)
+
+
     # ───── SHAP ─────
     # ───── SHAP ─────
     shap_values = EXPL(df)
@@ -210,3 +238,8 @@ if submitted:
 
 # ───────────── закрывающий div карточки ─────────────
 st.markdown("</div>", unsafe_allow_html=True)
+
+
+
+
+
