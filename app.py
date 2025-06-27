@@ -326,28 +326,28 @@ if submitted:
 
     # df уже сформирован
 
-    with st.expander("👀 Что отправляем в модель", expanded=False):
-        st.write(tg_feature_name)
-        st.write("shape:", df.shape)
-        st.dataframe(df.T)         # транспонируем, чтобы было «имя → значение»
-        st.write("dtypes:", df.dtypes)
+    # with st.expander("👀 Что отправляем в модель", expanded=False):
+    #     st.write(tg_feature_name)
+    #     st.write("shape:", df.shape)
+    #     st.dataframe(df.T)         # транспонируем, чтобы было «имя → значение»
+    #     st.write("dtypes:", df.dtypes)
 
 
 
-    # df уже сформирован
-    # ─── DEBUG: сверяем признаки ───
-    a = list(df.columns)
-    b = list(clf.feature_names_)
+    # # df уже сформирован
+    # # ─── DEBUG: сверяем признаки ───
+    # a = list(df.columns)
+    # b = list(clf.feature_names_)
 
-    st.write("=== длины ===", len(a), len(b))
-    st.write("=== не хватает ===", set(b) - set(a))
-    st.write("=== лишние ===",     set(a) - set(b))
+    # st.write("=== длины ===", len(a), len(b))
+    # st.write("=== не хватает ===", set(b) - set(a))
+    # st.write("=== лишние ===",     set(a) - set(b))
 
-    rows = []
-    for i, (col_df, col_m) in enumerate(zip(a, b)):
-        status = "OK" if col_df == col_m else "DIFF"
-        rows.append(f"{i:02d}: {status:4}  df={repr(col_df)}  model={repr(col_m)}")
-    st.code("\n".join(rows), language="text")
+    # rows = []
+    # for i, (col_df, col_m) in enumerate(zip(a, b)):
+    #     status = "OK" if col_df == col_m else "DIFF"
+    #     rows.append(f"{i:02d}: {status:4}  df={repr(col_df)}  model={repr(col_m)}")
+    # st.code("\n".join(rows), language="text")
     # ─── конец отладочного блока ───
 
     # теперь вызов модели
