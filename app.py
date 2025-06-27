@@ -231,6 +231,22 @@ with st.form("hc_form"):
 
     st.markdown("---")
 
+    # ─── ОДА23+  (16-162)  ←--- ДОБАВЬТЕ
+    st.markdown('<div class="subtitle">ОДА23+</div>', unsafe_allow_html=True)
+    val_oda = st.slider(
+        "oda",
+        min_value=BOUNDS["ОДА23+ "][0],
+        max_value=BOUNDS["ОДА23+ "][1],
+        value=float(MEDIANS.get("ОДА23+ ", 16.0)),
+        step=1.0,
+        label_visibility="collapsed",
+    )
+    form_vals["ОДА23+ "] = val_oda
+    typed["ОДА23+ "] = True
+
+    st.markdown("---")
+
+
     # ─── остальные признаки (по списку) ───
     CUSTOM_HANDLED = {
         "1 блок - психическая и социальная адаптация не нарушается",
@@ -242,6 +258,7 @@ with st.form("hc_form"):
         "Частота приема пищи 1-2 раза -1, 3 раза -2, 4 и более раз -3",
         "Степень фиброза по эластометрии",
         "Степень стеатоза по эластометрии",
+        "ОДА23+ ", 
     }
 
     for f in FEATURES:
@@ -285,9 +302,12 @@ if submitted:
     row = []
     for f in FEATURES:
         v = form_vals.get(f)
-        if f in ENC_MAP:
+
+        if f == "ОДА23+ ":               # ←--- НОВОЕ: оставить числом
+            pass
+        elif f in ENC_MAP:               # прежняя логика
             v = ENC_MAP[f][v]
-        elif v is None:            # не вводили → медиана
+        elif v is None:
             v = MEDIANS[f]
         row.append(v)
 
