@@ -313,6 +313,7 @@ if submitted:
 
 
     df   = pd.DataFrame([row], columns=FEATURES)
+    df.rename(columns={"ОДА23+": "ОДА23+ "}, inplace=True)
     # df уже сформирован
 
     with st.expander("👀 Что отправляем в модель", expanded=False):
