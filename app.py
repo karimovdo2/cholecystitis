@@ -26,6 +26,7 @@ st.set_page_config(page_title="Прогноз холецистита",
                    page_icon=None,
                    layout="centered")
 
+
 st.markdown(
     """
     <style>
