@@ -301,15 +301,14 @@ if submitted:
     # формируем строку для модели
     row = []
     for f in FEATURES:
-        v = form_vals.get(f)
 
-        if f == "ОДА23+ ":               # ←--- НОВОЕ: оставить числом
-            pass
-        elif f in ENC_MAP:               # прежняя логика
+        v = form_vals.get(f, MEDIANS[f])   # если ключа нет – берём медиану
+
+        # кодируем ТОЛЬКО если значение строка-метка
+        if f in ENC_MAP and isinstance(v, str):
             v = ENC_MAP[f][v]
-        elif v is None:
-            v = MEDIANS[f]
         row.append(v)
+
 
     df   = pd.DataFrame([row], columns=FEATURES)
     prob = float(clf.predict_proba(df)[:, 1])
