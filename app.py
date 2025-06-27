@@ -302,11 +302,12 @@ if submitted:
     row = []
     for f in FEATURES:
 
-        v = form_vals.get(f, MEDIANS[f])   # если ключа нет – берём медиану
+        v = form_vals.get(f, MEDIANS.get(f, 0.0))
 
-        # кодируем ТОЛЬКО если значение строка-метка
+        # кодируем ТОЛЬКО если это строковая метка
         if f in ENC_MAP and isinstance(v, str):
             v = ENC_MAP[f][v]
+
         row.append(v)
 
 
