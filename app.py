@@ -313,6 +313,14 @@ if submitted:
 
 
     df   = pd.DataFrame([row], columns=FEATURES)
+    # df уже сформирован
+
+    with st.expander("👀 Что отправляем в модель", expanded=False):
+        st.write("shape:", df.shape)
+        st.dataframe(df.T)         # транспонируем, чтобы было «имя → значение»
+        st.write("dtypes:", df.dtypes)
+
+
     prob = float(clf.predict_proba(df)[:, 1])
 
     st.markdown(f"### Вероятность холецистита: **{prob:.3f}**")
