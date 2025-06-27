@@ -317,7 +317,7 @@ if submitted:
     # --- единое «официальное» имя ТГ по паспорту модели ---
     tg_feature_name = next(
         n for n in clf.feature_names_
-        if n.strip().lower().startswith(("тг", "TyG"))
+        if n.strip().lower().startswith(("тг", "tyg"))
     )
 
     # если пользовательская колонка называется иначе – переименуем
@@ -327,6 +327,7 @@ if submitted:
     # df уже сформирован
 
     with st.expander("👀 Что отправляем в модель", expanded=False):
+        st.write(tg_feature_name)
         st.write("shape:", df.shape)
         st.dataframe(df.T)         # транспонируем, чтобы было «имя → значение»
         st.write("dtypes:", df.dtypes)
