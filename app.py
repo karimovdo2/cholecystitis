@@ -314,6 +314,15 @@ if submitted:
 
     df   = pd.DataFrame([row], columns=FEATURES)
     df.rename(columns={"ОДА23+": "ОДА23+ "}, inplace=True)
+    # --- единое «официальное» имя ТГ по паспорту модели ---
+    tg_feature_name = next(
+        n for n in clf.feature_names_
+        if n.strip().lower().startswith(("тг", "tyg"))
+    )
+
+    # если пользовательская колонка называется иначе – переименуем
+    if tg_feature_name not in df.columns and "ТГ" in df.columns:
+        df.rename(columns={"ТГ": tg_feature_name}, inplace=True)
 
     # df уже сформирован
 
