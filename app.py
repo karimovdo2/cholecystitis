@@ -317,7 +317,7 @@ if submitted:
     # --- единое «официальное» имя ТГ по паспорту модели ---
     tg_feature_name = next(
         n for n in clf.feature_names_
-        if n.strip().lower().startswith(("тг", "tyg"))
+        if n.strip().lower().startswith(("тг", "TyG"))
     )
 
     # если пользовательская колонка называется иначе – переименуем
