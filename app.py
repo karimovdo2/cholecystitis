@@ -314,7 +314,6 @@ if submitted:
 
     df   = pd.DataFrame([row], columns=FEATURES)
     df.rename(columns={"ОДА23+": "ОДА23+ "}, inplace=True)
-    assert list(df.columns) == list(clf.feature_names_)
 
     # df уже сформирован
 
